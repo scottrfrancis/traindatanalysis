@@ -29,7 +29,7 @@ segs.run.good<- segs.run[ (segs.run$pace.mph > 0) & (segs.run$pace.mph < 15)
 segs.run.good$datemonth<- as.factor( format( as.Date( segs.run.good$time ), format="%Y%m" ) )
 
 segs.run.good$daysAgo<- as.integer( Sys.Date() - as.Date( segs.run.good$time ) )
-segs.run.good$cyclesAgo<- as.integer( segs.run.good$daysAgo/(6*7) )
+segs.run.good$cyclesAgo<- as.integer( segs.run.good$daysAgo/(12*7) )
 
 
 
