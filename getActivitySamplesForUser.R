@@ -9,21 +9,33 @@ getActivitySamplesForUser<- function( user_id, activity_type, from_date=NULL, to
   # query: {$and: [{user_id: ObjectId("5467eca89a40e7c8909db618")}, {type: "Run"}]}, {_id:1}  
   buf<- mongo.bson.buffer.create()
   mongo.bson.buffer.start.array( buf, "$and" )
+  bufIdx<- 0
   
-  mongo.bson.buffer.start.object( buf, 0 )
+  mongo.bson.buffer.start.object( buf, "0" ); bufIdx<- bufIdx + 1
   mongo.bson.buffer.append( buf, "user_id", mongo.oid.from.string(user_id) )
   mongo.bson.buffer.finish.object( buf ) # index 0
   
-  mongo.bson.buffer.start.object( buf, bufIdx )
+  mongo.bson.buffer.start.object( buf, as.character(bufIdx) ); bufIdx<- bufIdx +1
   mongo.bson.buffer.append( buf, "type", activity_type )
-  mongo.bson.buffer.finish.object( 1 )  # index 1
+  mongo.bson.buffer.finish.object( buf )  # index 1
   
+  if( !is.null(from_date) )
+  {
+    mongo.bson.buffer.start.object( buf, as.character(bufIdx) ); bufIdx<- bufIdx + 1
+    mongo.bson.buffer.append( buf, "start_date_local" )
+
+    mongo.bson.buffer.start.object( buf, as.character(bufIdx) ); bufIdx<- bufIdx + 1
+    mongo.bson.buffer.append( buf, "$gte", from_date )
+    mongo.bson.buffer.finish.object( buf )
+    
+    mongo.bson.buffer.finish.object( buf )
+  }
   mongo.bson.buffer.finish.object( buf ) # $and array
   q.bson<- mongo.bson.from.buffer( buf )
   
   #   db.workouts.find( {$and: [{'type':'Ride'},{'start_date_local': {$gte: '2014-11-01'}},{'start_date_local':{$lt: '2014-12-01'}}]}, {'name':1} )
-  q.json<- paste0('{"$and":[{"user_id":ObjectId("', mongo.oid.from.string(user_id), '")},',
-                      '{"type":"', activity_type, '"}]}' )
+#   q.json<- paste0('{"$and":[{"user_id":ObjectId("', mongo.oid.from.string(user_id), '")},',
+#                       '{"type":"', activity_type, '"}]}' )
   
   workouts.activity<- mongo.find.all( mongo, 'quantathlete.workouts', q.bson, 
                                   fields=mongo.bson.from.list( c(list(`_id`=1L,'type'=1L,'start_date_local','name'))) )
