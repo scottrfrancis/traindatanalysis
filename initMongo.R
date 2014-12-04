@@ -1,7 +1,3 @@
-require( 'plyr' )
-
-require( '')
-
 library(rmongodb)
 
 
