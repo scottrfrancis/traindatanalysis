@@ -1,6 +1,6 @@
 
 
-getActivitySamplesForUser<- function( user_id, activity_type, from_date=NULL, to_date=NULL )
+getActivitySamplesForUser<- function( user_id, activity_type, from_date=NULL, before_date=NULL )
 {
   # find all that users workouts
   # workouts.all<- mongo.find.all( mongo, 'quantathlete.workouts', 
@@ -22,14 +22,21 @@ getActivitySamplesForUser<- function( user_id, activity_type, from_date=NULL, to
   if( !is.null(from_date) )
   {
     mongo.bson.buffer.start.object( buf, as.character(bufIdx) ); bufIdx<- bufIdx + 1
-    mongo.bson.buffer.append( buf, "start_date_local" )
-
-    mongo.bson.buffer.start.object( buf, as.character(bufIdx) ); bufIdx<- bufIdx + 1
-    mongo.bson.buffer.append( buf, "$gte", from_date )
+    mongo.bson.buffer.start.object( buf, "start_date_local" )
+    mongo.bson.buffer.append.string( buf, "$gte", from_date )
     mongo.bson.buffer.finish.object( buf )
-    
     mongo.bson.buffer.finish.object( buf )
   }
+  
+  if ( !is.null(before_date) )
+  {
+    mongo.bson.buffer.start.object( buf, as.character(bufIdx) ); bufIdx<- bufIdx + 1
+    mongo.bson.buffer.start.object( buf, "start_date_local" )
+    mongo.bson.buffer.append.string( buf, "$lt", before_date )
+    mongo.bson.buffer.finish.object( buf )
+    mongo.bson.buffer.finish.object( buf )
+  }
+  
   mongo.bson.buffer.finish.object( buf ) # $and array
   q.bson<- mongo.bson.from.buffer( buf )
   

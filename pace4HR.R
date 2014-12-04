@@ -11,13 +11,13 @@ require( 'plyr' )
 # segs<- read.csv( f )
 # 
 
-segs<- data.frame()
-for (f in repo.files)
-{
-  s<- read.csv( f )
-  
-  segs<- rbind( segs, s )
-}
+# segs<- data.frame()
+# for (f in repo.files)
+# {
+#   s<- read.csv( f )
+#   
+#   segs<- rbind( segs, s )
+# }
 
 
 segs.run<- segs[segs$sport=='run',]
