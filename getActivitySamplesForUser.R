@@ -92,6 +92,8 @@ getActivitySamplesForUser<- function( user_id, activity_type, from_date=NULL, be
     s[['heartrate']][which(s[['heartrate']]==0)]<- NA
     s[['power']][which(s[['power']]==0)]<- NA
     
+    # munge the time samples into proper time dates
+    
     sample.df[,names.use]<- s[names.use]  # copy by names in use
     
     #
