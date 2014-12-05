@@ -1,9 +1,10 @@
 library(rmongodb)
+source('summarizeActivitySamplesForUser.R')
 
 
 # your connection details will likely differ from these defaults
 host <- "quantathlete.com:27017"
-host<- "localhost:27017"
+#host<- "localhost:27017"
 username <- ""
 password <- ""
 db <- "quantathlete"
@@ -20,5 +21,9 @@ mongo <- mongo.create(host=host , db=db, username=username, password=password)
 users<- mongo.find.all( mongo, 'quantathlete.users', fields=mongo.bson.from.list( c(list(`_id`=1L))) )
 uid<- users[[1]]$`_id`
 
-samples.user.act<- getActivitySamplesForUser( uid, 'Swim' )
+for ( u in users )
+{
+  print( u$`_id` )
+  sapply( c('Swim', 'Bike', 'Run'), function(a) summarizeActivitySamplesForUser(u$`_id`, a) )
+}
 

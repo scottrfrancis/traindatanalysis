@@ -1,4 +1,4 @@
-
+source('getMaxSustainedMeasure.R')
 
 summarizeActivitySamplesForUser<- function( user_id, activity_type, from_date=NULL, before_date=NULL )
 {
@@ -66,11 +66,10 @@ summarizeActivitySamplesForUser<- function( user_id, activity_type, from_date=NU
   names.use=names.use[(names.use!='latlng')] 
   names.use<- c( 'latitude', 'longitude', names.use )
   
-  samples<- data.frame()
-#  i<-1
+  i<-1
   for( s in workout.samples )
   {
-#   cat( paste0(i, "."))
+   cat( paste0(i, "."))
     #  s<- workout.samples[[1]]
     #
     # build data frame from source sample
@@ -91,22 +90,22 @@ summarizeActivitySamplesForUser<- function( user_id, activity_type, from_date=NU
     # suppress silly 0's
     s[['heartrate']][which(s[['heartrate']]==0)]<- NA
     s[['power']][which(s[['power']]==0)]<- NA
-    
-    # munge the time samples into proper time dates
-    
+        
     sample.df[,names.use]<- s[names.use]  # copy by names in use    
-    # and roll it up into the big 'un
-    #
-    samples<- rbind.fill( samples, sample.df )
-    
-    
+     
     time.windows<- c( 6, 12, 3*60, 6*60, 20*60, 60*60 )
     heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, sample.df$heartrate, t ) )
     
-    
-#    i<- i+1
-  }
+  #  db.workoutSummaries.update( { 'workout_id': ObjectId( '547a47839cb06a51a04196c1' ) }, {$set: { 'timeWindows': [6,12,180,360,1200,3600], 'heartrateWindows': [177, 176, 169, 168, 165, 146] }},{'upsert':1} )
+    buf<- mongo.bson.buffer.create()
+    mongo.bson.buffer.append( buf, "workout_id", mongo.oid.from.string(s$workout_id) )
+    criteria.bson<- mongo.bson.from.buffer( buf )
   
-  return( samples )
+    mongo.update( mongo, 'quantathlete.workoutSummaries', 
+                    criteria.bson,                  
+                    mongo.bson.from.list( list( "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows ) ), 
+                  mongo.update.upsert )
+    i<- i+1
+  }
 }
 
