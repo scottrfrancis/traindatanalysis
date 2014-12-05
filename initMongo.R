@@ -24,6 +24,6 @@ uid<- users[[1]]$`_id`
 for ( u in users )
 {
   print( u$`_id` )
-  sapply( c('Swim', 'Bike', 'Run'), function(a) summarizeActivitySamplesForUser(u$`_id`, a) )
+  sapply( c('Swim', 'Ride', 'Run'), function(a) summarizeActivitySamplesForUser(u$`_id`, a) )
 }
 
