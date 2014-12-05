@@ -58,6 +58,14 @@ summarizeActivitySamplesForUser<- function( user_id, activity_type, from_date=NU
   q.bson<- mongo.bson.from.buffer(buf)
   
   workout.samples<- mongo.find.all( mongo, 'quantathlete.samples', q.bson )
+  
+  if ( length( workout.samples ) <= 0 )
+  {
+    print( "no workouts for user")
+    return()
+  }
+  print( "processing samples")
+
   sample.names<- names( workout.samples[[1]] )
   
   #names.good<- sapply( sample.names, function(n) !is.null( unlist(s[n])))
@@ -96,15 +104,18 @@ summarizeActivitySamplesForUser<- function( user_id, activity_type, from_date=NU
     time.windows<- c( 6, 12, 3*60, 6*60, 20*60, 60*60 )
     heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, sample.df$heartrate, t ) )
     
-  #  db.workoutSummaries.update( { 'workout_id': ObjectId( '547a47839cb06a51a04196c1' ) }, {$set: { 'timeWindows': [6,12,180,360,1200,3600], 'heartrateWindows': [177, 176, 169, 168, 165, 146] }},{'upsert':1} )
-    buf<- mongo.bson.buffer.create()
-    mongo.bson.buffer.append( buf, "workout_id", mongo.oid.from.string(s$workout_id) )
-    criteria.bson<- mongo.bson.from.buffer( buf )
-  
-    mongo.update( mongo, 'quantathlete.workoutSummaries', 
-                    criteria.bson,                  
-                    mongo.bson.from.list( list( "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows ) ), 
-                  mongo.update.upsert )
+    if ( !all( is.na( heartrate.windows ) ) )
+    {
+    #  db.workoutSummaries.update( { 'workout_id': ObjectId( '547a47839cb06a51a04196c1' ) }, {$set: { 'timeWindows': [6,12,180,360,1200,3600], 'heartrateWindows': [177, 176, 169, 168, 165, 146] }},{'upsert':1} )
+      buf<- mongo.bson.buffer.create()
+      mongo.bson.buffer.append( buf, "workout_id", mongo.oid.from.string(s$workout_id) )
+      criteria.bson<- mongo.bson.from.buffer( buf )
+    
+      mongo.update( mongo, 'quantathlete.workoutSummaries', 
+                      criteria.bson,                  
+                      mongo.bson.from.list( list( "workout_id"=mongo.oid.from.string(s$workout_id), "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows ) ), 
+                    mongo.update.upsert )
+    }
     i<- i+1
   }
 }

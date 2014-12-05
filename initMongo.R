@@ -4,7 +4,7 @@ source('summarizeActivitySamplesForUser.R')
 
 # your connection details will likely differ from these defaults
 host <- "quantathlete.com:27017"
-#host<- "localhost:27017"
+host<- "localhost:27017"
 username <- ""
 password <- ""
 db <- "quantathlete"
