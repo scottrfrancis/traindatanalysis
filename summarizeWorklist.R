@@ -3,11 +3,9 @@ source( 'initMongo.R' )
 library(rmongodb)
 source('summarizeWorkoutList.R')
 
-mongo.q<- initMongo( host='quantathlete.com', db='quantathlete')
-mongo.local<- initMongo( host='localhost', db='quantathlete')
+#mongo<- initMongo( host='quantathlete.com', db='quantathlete')
+mongo<- initMongo( host='localhost', db='quantathlete')
 
-mongo<- mongo.local
-#mongo<- mongo.q
 
 # read IDs for workouts that need summaries
 # list.filename<- 'worklist.json'

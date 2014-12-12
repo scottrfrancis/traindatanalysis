@@ -3,9 +3,11 @@ source('getMaxSustainedMeasure.R')
 
 summarizeWorkoutList<- function( mongo, workouts.ids )
 { 
+  i<-1
   for ( w in workouts.ids )
   {
     # w<- workouts.ids[[1]]
+    cat( paste0(i, ".", mongo.oid.to.string(w)) )
     
     buf<- mongo.bson.buffer.create(); mongo.bson.buffer.append( buf, "workout_id", w ); q.bson<- mongo.bson.from.buffer( buf )
     workout.samples<- mongo.find.all( mongo, 'quantathlete.samples', q.bson )
@@ -21,10 +23,8 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
     names.use=names.use[(names.use!='latlng')] 
     names.use<- c( 'latitude', 'longitude', names.use )
     
-    i<-1
     for( s in workout.samples )
     {
-      cat( paste0(i, "."))
       #  s<- workout.samples[[1]]
       #
       # build data frame from source sample
@@ -43,13 +43,15 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
       }
       
       # suppress silly 0's
+      s[['heartrate']][which( s[['heartrate']] == 'NULL' )] <- NA
       s[['heartrate']][which(s[['heartrate']]==0)]<- NA
+      s[['power']][which( s[['power']] == 'NULL' )] <- NA
       s[['power']][which(s[['power']]==0)]<- NA
       
       sample.df[,names.use]<- s[names.use]  # copy by names in use    
       
       time.windows<- c( 6, 12, 3*60, 6*60, 20*60, 60*60 )
-      heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, sample.df$heartrate, t ) )
+      heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$heartrate), t ) )
       
       if ( !all( is.na( heartrate.windows ) ) )
       {
@@ -63,7 +65,12 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
                       mongo.bson.from.list( list( "workout_id"=mongo.oid.from.string(s$workout_id), "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows ) ), 
                       mongo.update.upsert )
       }
-      i<- i+1
     }
-  }  
+  
+    # remove this id from the worklist
+    
+    mongo.remove( mongo, 'quantathlete.workoutSummariesOrphans', q.bson )
+  
+    i<- i+1
+  } 
 }
