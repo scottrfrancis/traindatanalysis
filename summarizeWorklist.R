@@ -3,7 +3,11 @@ source( 'initMongo.R' )
 library(rmongodb)
 source('summarizeWorkoutList.R')
 
-mongo<- initMongo( host='quantathlete.com', db='quantathlete')
+mongo.q<- initMongo( host='quantathlete.com', db='quantathlete')
+mongo.local<- initMongo( host='localhost', db='quantathlete')
+
+mongo<- mongo.local
+#mongo<- mongo.q
 
 # read IDs for workouts that need summaries
 # list.filename<- 'worklist.json'
@@ -13,7 +17,7 @@ mongo<- initMongo( host='quantathlete.com', db='quantathlete')
 
 # list.json<- fromJSON( file= list.filename)
 
-workouts.list<- mongo.find.all( mongo, 'quantathlete.workoutSummariesOrphans', fields=mongo.bson.from.list( c(list(`_id`=1L))) )
-workouts.ids<- lapply( workouts.list, function(w) mongo.oid.from.string(w$`_id` ) )
+workouts.list<- mongo.find.all( mongo, 'quantathlete.workoutSummariesOrphans', fields=mongo.bson.from.list( c(list('workout_id'=1L))) )
+workouts.ids<- lapply( workouts.list, function(w) mongo.oid.from.string(w$'workout_id' ) )
 
-summarizeWorkoutList( workouts.ids )
+summarizeWorkoutList( mongo, workouts.ids )
