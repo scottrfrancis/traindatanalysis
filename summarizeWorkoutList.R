@@ -50,7 +50,18 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
       
       sample.df[,names.use]<- s[names.use]  # copy by names in use    
       
+      # compute pace in m/s
+      time0<- c( 0, s[['time']][1:(length(s[['time']]) - 1)])
+      dur<- s[['time']] - time0
+      
+      dist0<- c( 0, s[['distance']][1:length(s[['distance']]) - 1])
+      length<- s[['distance']] - dist0
+      
+      speed.mpS<- length/dur
+      
       time.windows<- c( 6, 12, 3*60, 6*60, 20*60, 60*60 )
+      
+      speed.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, speed.mpS, t ) )
       heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$heartrate), t ) )
       
       if ( !all( is.na( heartrate.windows ) ) )
@@ -62,7 +73,7 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
         
         mongo.update( mongo, 'quantathlete.workoutSummaries', 
                       criteria.bson,                  
-                      mongo.bson.from.list( list( "workout_id"=mongo.oid.from.string(s$workout_id), "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows ) ), 
+                      mongo.bson.from.list( list( "workout_id"=mongo.oid.from.string(s$workout_id), "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows, "paceWindows"=speed.windows ) ), 
                       mongo.update.upsert )
       }
     }

@@ -16,6 +16,8 @@ mongo<- initMongo( host='localhost', db='quantathlete')
 # list.json<- fromJSON( file= list.filename)
 
 workouts.list<- mongo.find.all( mongo, 'quantathlete.workoutSummariesOrphans', fields=mongo.bson.from.list( c(list('workout_id'=1L))) )
+# workouts.list<- mongo.find.all( mongo, 'quantathlete.workouts', fields=mongo.bson.from.list( c( list( '_id'=1L))))
+# workouts.ids<- lapply( workouts.list, function(w) mongo.oid.from.string(w$'_id' ) )
 workouts.ids<- lapply( workouts.list, function(w) mongo.oid.from.string(w$'workout_id' ) )
 
 summarizeWorkoutList( mongo, workouts.ids )
