@@ -50,18 +50,23 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
       
       sample.df[,names.use]<- s[names.use]  # copy by names in use    
       
-      # compute pace in m/s
-      time0<- c( 0, s[['time']][1:(length(s[['time']]) - 1)])
-      dur<- s[['time']] - time0
-      
-      dist0<- c( 0, s[['distance']][1:length(s[['distance']]) - 1])
-      length<- s[['distance']] - dist0
-      
-      speed.mpS<- length/dur
-      
       time.windows<- c( 6, 12, 3*60, 6*60, 20*60, 60*60 )
+
+      # compute pace in m/s
+      if ( !is.null( s[['distance']] ) )
+      {
+        time0<- c( 0, s[['time']][1:(length(s[['time']]) - 1)])
+        dur<- s[['time']] - time0
+        
+        dist0<- c( 0, s[['distance']][1:length(s[['distance']]) - 1])
+        length<- s[['distance']] - dist0
+        
+        speed.mpS<- length/dur
+        
+#        cat( paste0( "ready to call max with ", length(sample.df$time), " and ", length( speed.mpS ) ) )
+        speed.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, speed.mpS, t ) )
+      }
       
-      speed.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, speed.mpS, t ) )
       heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$heartrate), t ) )
       
       if ( !all( is.na( heartrate.windows ) ) )
@@ -71,9 +76,15 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
         mongo.bson.buffer.append( buf, "workout_id", mongo.oid.from.string(s$workout_id) )
         criteria.bson<- mongo.bson.from.buffer( buf )
         
+        doc.list<- list( "workout_id"=mongo.oid.from.string(s$workout_id), "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows )
+        if ( !is.null( s[['distance']]) )
+        {
+          doc.list$paceWindows<- speed.windows
+        }
+        
         mongo.update( mongo, 'quantathlete.workoutSummaries', 
                       criteria.bson,                  
-                      mongo.bson.from.list( list( "workout_id"=mongo.oid.from.string(s$workout_id), "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows, "paceWindows"=speed.windows ) ), 
+                      mongo.bson.from.list( doc.list ), 
                       mongo.update.upsert )
       }
     }
