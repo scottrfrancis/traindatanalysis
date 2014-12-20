@@ -68,7 +68,8 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
       }
       
       heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$heartrate), t ) )
-      
+      power.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$power), t) )      
+
       if ( !all( is.na( heartrate.windows ) ) )
       {
         #  db.workoutSummaries.update( { 'workout_id': ObjectId( '547a47839cb06a51a04196c1' ) }, {$set: { 'timeWindows': [6,12,180,360,1200,3600], 'heartrateWindows': [177, 176, 169, 168, 165, 146] }},{'upsert':1} )
@@ -76,7 +77,10 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
         mongo.bson.buffer.append( buf, "workout_id", mongo.oid.from.string(s$workout_id) )
         criteria.bson<- mongo.bson.from.buffer( buf )
         
-        doc.list<- list( "workout_id"=mongo.oid.from.string(s$workout_id), "timeWindows"=time.windows,  "heartrateWindows"=heartrate.windows )
+        doc.list<- list( "workout_id"=mongo.oid.from.string(s$workout_id), 
+                          "timeWindows"=time.windows,  
+                          "heartrateWindows"=heartrate.windows,
+                          "powerWindows"=power.windows )
         if ( !is.null( s[['distance']]) )
         {
           doc.list$paceWindows<- speed.windows
