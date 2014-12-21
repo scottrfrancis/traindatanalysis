@@ -45,8 +45,8 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
       # suppress silly 0's
       s[['heartrate']][which( s[['heartrate']] == 'NULL' )] <- NA
       s[['heartrate']][which(s[['heartrate']]==0)]<- NA
-      s[['power']][which( s[['power']] == 'NULL' )] <- NA
-      s[['power']][which(s[['power']]==0)]<- NA
+      s[['watts']][which( s[['watts']] == 'NULL' )] <- NA
+      s[['watts']][which(s[['watts']]==0)]<- NA
       
       sample.df[,names.use]<- s[names.use]  # copy by names in use    
       
@@ -68,7 +68,7 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
       }
       
       heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$heartrate), t ) )
-      power.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$power), t) )      
+      watts.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$watts), t) )      
 
       if ( !all( is.na( heartrate.windows ) ) )
       {
@@ -80,7 +80,7 @@ summarizeWorkoutList<- function( mongo, workouts.ids )
         doc.list<- list( "workout_id"=mongo.oid.from.string(s$workout_id), 
                           "timeWindows"=time.windows,  
                           "heartrateWindows"=heartrate.windows,
-                          "powerWindows"=power.windows )
+                          "wattsWindows"=watts.windows )
         if ( !is.null( s[['distance']]) )
         {
           doc.list$paceWindows<- speed.windows
