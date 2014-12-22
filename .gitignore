@@ -1,3 +1,6 @@
+# local config files
+config.R
+
 # History files
 .Rhistory
 
