@@ -22,8 +22,6 @@ summarizeWorkout<- function( mongo, workout.oid )
   #
   # build data frame from source sample
   #
-  
-  # idea is blank a dataframe and fill it in...
   sample.df<- data.frame( matrix( NA, nrow= length( s$time), ncol = length( names.use )))
   names(sample.df)<- names.use
   
