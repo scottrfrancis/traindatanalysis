@@ -6,12 +6,13 @@ summarizeWorkout<- function( mongo, workout.oid )
   buf<- mongo.bson.buffer.create(); mongo.bson.buffer.append( buf, "workout_id", workout.oid ); q.bson<- mongo.bson.from.buffer( buf )
   workout.samples<- mongo.find.all( mongo, 'quantathlete.samples', q.bson )
   
+  cat( mongo.oid.to.string( workout.oid ) )
   if ( length( workout.samples ) <= 0 )
   {
-    print( "no workouts for user")
+    print( " - no workouts for user")
     return()
   }
-  print( "processing samples")
+  print( " - processing samples")
   
   names.use<- names( workout.samples[[1]] )
   names.use=names.use[(names.use!='latlng')] 

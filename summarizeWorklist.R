@@ -11,7 +11,7 @@ mongo<- initMongo( host=dbHost, db=dbName )
 
 orphans.collection<- paste( dbName, "workoutSummariesOrphans", sep="." )
 
-while( true )
+while( TRUE )
 {
   workout.bson<- mongo.find.one( mongo, orphans.collection, fields=mongo.bson.from.list( c(list('workout_id'=1L))) ) 
   if ( is.null( workout.bson ) )
