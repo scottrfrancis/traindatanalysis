@@ -1,0 +1,2 @@
+dbHost<- 'localhost'
+dbName<- 'test'
