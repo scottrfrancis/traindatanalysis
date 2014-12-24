@@ -1,6 +1,13 @@
 require('rmongodb')
 source('getMaxSustainedMeasure.R')
 
+computeTSS<- function( mongo, workout.oid, dur, hr )
+{
+  # get zone profile
+  
+  
+}
+
 summarizeWorkout<- function( mongo, workout.oid )
 {
   buf<- mongo.bson.buffer.create(); mongo.bson.buffer.append( buf, "workout_id", workout.oid ); q.bson<- mongo.bson.from.buffer( buf )
@@ -60,7 +67,9 @@ summarizeWorkout<- function( mongo, workout.oid )
   }
   
   heartrate.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$heartrate), t ) )
-  watts.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$watts), t) )      
+  watts.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( sample.df$time, unlist(sample.df$watts), t) )     
+  
+  tss.stream<- computeTSS( mongo, workout.oid, dur, unlist( sample.df$heartrate ) )
   
   ## TODO: check if adding NA summaries causes downstream problems
  # if ( !all( is.na( heartrate.windows ) ) )
