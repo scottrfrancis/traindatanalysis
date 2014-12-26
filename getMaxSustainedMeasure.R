@@ -12,7 +12,7 @@ getMaxSustainedMeasure<- function( time_S.elapsed, metric, window_S )
   # that is, take the mins of a SLIDING WINDOW of 4 mins
   # the MAX of these rewindowed mins is the max sustained for window_S
   
-  if (nrow(mins) < 4)
+  if (nrow(means) < 4)
   {
     return( NA )
   }
