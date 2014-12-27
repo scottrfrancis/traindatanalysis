@@ -35,28 +35,42 @@ estimateFTP<- function( mongo, user.oid, type, date = Sys.Date() )
   q.bson<- mongo.bson.from.buffer( buf )
   
   thresholds<- mongo.find.all( mongo, 'quantathlete.userThresholds', q.bson, 
-                    fields=mongo.bson.from.list( c(list('endDate'=1L,'timeWindows'=1,'paceWindows'=1))) )
+                    fields=mongo.bson.from.list( c(list('endDate'=1L,'timeWindows'=1,'paceWindows'=1,'wattsWindows'=1))) )
     
-  datePaces<- sapply( thresholds, function(t) rbind( t$endDate, t$paceWindows[ match( 20*60, t$timeWindows ) ] ) )
-  ftp.df<- data.frame( t(datePaces) )
-  names( ftp.df )<- c( 'date', 'ftp' )
-  ftp.df$ftp[which( ftp.df$ftp == 'NULL' )] <- NA
+  ftp.df<- data.frame( matrix( NA, nrow= length(thresholds), ncol =2 )) 
+  names( ftp.df)<- c( 'date', 'ftp' )
   
-  # run lm against it
-  dates.use<- as.numeric( as.Date(unlist( ftp.df$date[!is.na( ftp.df$ftp ) ] )))
-  ftp.use<- unlist( ftp.df$ftp[!is.na( ftp.df$ftp ) ] )
-  model.df<- as.data.frame( cbind( dates.use, ftp.use ) )
+  windowName = 'paceWindows'
+  if ( type == "Ride")
+    windowName = 'wattsWindows'
   
-  model<- lm( ftp.use ~ dates.use )
-  coeffs<- coefficients( model )
-
-  # predict FTP for date
-  ftp<- coeffs[1] + coeffs[2]*as.numeric( date )
+  dp.df<- as.data.frame( t( sapply( thresholds, function(t) rbind( t$endDate, t[[windowName]][match( 20*60, t$timeWindows )] ) ) ) )
+  
+  ftp.df$date<- as.Date(unlist( dp.df[,1]))
+  ftp.df$ftp[which(dp.df[,2] != 'NULL')]<- as.numeric(unlist( dp.df[,2]))
+  
+  ftp<- NA
+  if ( sum( complete.cases( ftp.df ) ) > 0 )
+  {
+    # run lm against it
+    model<- lm( ftp ~ date, data=ftp.df )
+    coeffs<- coefficients( model )
+  
+    # predict FTP for date
+    ftp<- coeffs[1] + coeffs[2]*as.numeric( date )
+  }
+  
+  ftp
 }
 
 
 users.list<- mongo.find.all( mongo, 'quantathlete.users', fields=mongo.bson.from.list( c( list( '_id'=1L))))
 users.ids<- lapply( users.list, function(u) mongo.oid.from.string(u$'_id' ) )
+
+users.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Ride" ))
+users.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Run" ))
+
+
 
 # user.oid<- users.ids[[1]]
 # type='Ride'
