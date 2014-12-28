@@ -14,6 +14,60 @@ getTheshold<- function( t, window_S )
   list( t$endDate, t$paceWindows[ match( window_S, t$timeWindows ) ] )
 }
 
+pushUserTimedDataStream<- function( mongo, collection='quantathlete.userDataStreams', user.oid, streamName, datum, timestamp = Sys.Date()  )
+{
+  if ( !is.na( datum ) )
+  {
+    # update the "FTP-dot" named data stream fro the user
+    buf<- mongo.bson.buffer.create()
+    mongo.bson.buffer.append( buf, "user_id", user.oid )
+    mongo.bson.buffer.append( buf, "name", streamName )
+    criteria.bson<- mongo.bson.from.buffer( buf )
+    
+    # $push the new datum to the end of the data element 
+    update.bson<- mongo.bson.from.JSON( paste0( '{"$push":{"data":', datum, '}}' ) )
+    
+    mongo.update( mongo, collection, 
+                  criteria.bson,    
+                  update.bson,
+                  mongo.update.upsert )
+    
+    # find (and create?) and update the time series
+    dataStream<- mongo.bson.to.list( mongo.find.one( mongo, 'quantathlete.userDataStreams',
+                                                     criteria.bson, fields=c(list( 'timeSeries_id'=1 )) ) )
+    
+    if ( is.null( dataStream$timeSeries_id ) )
+    {
+      # create a new timeSeries and link to it
+      ts.oid<- mongo.oid.create()
+      buf<- mongo.bson.buffer.create()
+      mongo.bson.buffer.append( buf, "_id", ts.oid )
+      newDoc.bson<- mongo.bson.from.buffer( buf )
+      
+      mongo.insert( mongo, 'quantathlete.timeSeries', newDoc.bson )
+      
+      # update the dataStream to use this timeseries
+      buf<- mongo.bson.buffer.create()
+      mongo.bson.buffer.start.object( buf, "$set" )
+      mongo.bson.buffer.append( buf, "timeSeries_id", ts.oid )
+      mongo.bson.buffer.finish.object( buf )
+      update.bson<- mongo.bson.from.buffer( buf )
+      
+      mongo.update( mongo, collection, criteria.bson, update.bson )
+      
+      dataStream$timeSeries_id<- ts.oid
+    }
+    
+    # timeSeries exists.. push the cur date to the end
+    buf<- mongo.bson.buffer.create()
+    mongo.bson.buffer.append( buf, "_id", dataStream$timeSeries_id )
+    criteria.bson<- mongo.bson.from.buffer( buf )
+    
+    update.bson<- mongo.bson.from.JSON( paste0( '{"$push":{"timestamps":"', timestamp, '"}}' ) )
+    
+    mongo.update( mongo, 'quantathlete.timeSeries', criteria.bson, update.bson )
+  }
+}
 
 estimateFTP<- function( mongo, user.oid, type, date = Sys.Date() )
 {
@@ -58,6 +112,7 @@ estimateFTP<- function( mongo, user.oid, type, date = Sys.Date() )
   
     # predict FTP for date
     ftp<- coeffs[1] + coeffs[2]*as.numeric( date )
+    names(ftp)<- NULL
   }
   
   ftp
@@ -65,11 +120,18 @@ estimateFTP<- function( mongo, user.oid, type, date = Sys.Date() )
 
 
 users.list<- mongo.find.all( mongo, 'quantathlete.users', fields=mongo.bson.from.list( c( list( '_id'=1L))))
-users.ids<- lapply( users.list, function(u) mongo.oid.from.string(u$'_id' ) )
 
-users.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Ride" ))
-users.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Run" ))
+users.ride.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Ride" ))
+users.run.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Run" ))
 
+
+# update database
+# db.users.update( {_id:ObjectId("546115a3bc5f4d0676fb39bb")}, {$push:{ foo:2}} )
+for ( i in 1:length(users.list) )
+{ 
+  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Ride-FTP-dot", users.ride.ftps[[i]] )
+  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Run-FTP-dot", users.run.ftps[[i]] )   
+}
 
 
 # user.oid<- users.ids[[1]]
