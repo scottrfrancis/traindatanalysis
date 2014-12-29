@@ -24,13 +24,18 @@ pushUserTimedDataStream<- function( mongo, collection='quantathlete.userDataStre
     mongo.bson.buffer.append( buf, "name", streamName )
     criteria.bson<- mongo.bson.from.buffer( buf )
     
+    dataStream.bson<- mongo.find.one( mongo, 'quantathlete.userDataStreams',
+                                      criteria.bson, fields=c(list( 'timeSeries_id'=1 )) )
+    if ( is.null( dataStream.bson ) )
+    {
+      # create it -- using criteria as the new doc
+      mongo.insert( mongo, 'quantathlete.userDataStreams', criteria.bson )
+    }
+    
     # $push the new datum to the end of the data element 
     update.bson<- mongo.bson.from.JSON( paste0( '{"$push":{"data":', datum, '}}' ) )
     
-    mongo.update( mongo, collection, 
-                  criteria.bson,    
-                  update.bson,
-                  mongo.update.upsert )
+    mongo.update( mongo, collection, criteria.bson, update.bson )
     
     # find (and create?) and update the time series
     dataStream<- mongo.bson.to.list( mongo.find.one( mongo, 'quantathlete.userDataStreams',
@@ -69,7 +74,7 @@ pushUserTimedDataStream<- function( mongo, collection='quantathlete.userDataStre
   }
 }
 
-estimateFTP<- function( mongo, user.oid, type, date = Sys.Date() )
+estimateFTP<- function( mongo, user.oid, type, windowName, date = Sys.Date() )
 {
   # build vector of 20 min thresholds for user and type from db
   # db.userThresholds.find({user_id: ObjectId("546115a3bc5f4d0676fb39bb"), type:"Run"}, {endDate:1, timeWindows:1, paceWindows:1})
@@ -89,14 +94,14 @@ estimateFTP<- function( mongo, user.oid, type, date = Sys.Date() )
   q.bson<- mongo.bson.from.buffer( buf )
   
   thresholds<- mongo.find.all( mongo, 'quantathlete.userThresholds', q.bson, 
-                    fields=mongo.bson.from.list( c(list('endDate'=1L,'timeWindows'=1,'paceWindows'=1,'wattsWindows'=1))) )
+                    fields=mongo.bson.from.list( c(list('endDate'=1L,'timeWindows'=1,'heartrateWindows'=1, 'paceWindows'=1,'wattsWindows'=1))) )
     
   ftp.df<- data.frame( matrix( NA, nrow= length(thresholds), ncol =2 )) 
   names( ftp.df)<- c( 'date', 'ftp' )
   
-  windowName = 'paceWindows'
-  if ( type == "Ride")
-    windowName = 'wattsWindows'
+#   windowName = 'paceWindows'
+#   if ( type == "Ride")
+#     windowName = 'wattsWindows'
   
   dp.df<- as.data.frame( t( sapply( thresholds, function(t) rbind( t$endDate, t[[windowName]][match( 20*60, t$timeWindows )] ) ) ) )
   
@@ -121,8 +126,12 @@ estimateFTP<- function( mongo, user.oid, type, date = Sys.Date() )
 
 users.list<- mongo.find.all( mongo, 'quantathlete.users', fields=mongo.bson.from.list( c( list( '_id'=1L))))
 
-users.ride.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Ride" ))
-users.run.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Run" ))
+users.ride.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Ride", 'wattsWindows' ))
+users.run.ftps<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Run", 'paceWindows' ))
+
+users.ride.hrs<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Ride", 'heartrateWindows' ))
+users.run.hrs<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.from.string(u$'_id' ), "Run", 'heartrateWindows' ))
+
 
 
 # update database
@@ -131,6 +140,9 @@ for ( i in 1:length(users.list) )
 { 
   pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Ride-FTP-dot", users.ride.ftps[[i]] )
   pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Run-FTP-dot", users.run.ftps[[i]] )   
+
+  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Ride-FTHR-dot", users.ride.hrs[[i]] )
+  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Run-FTHR-dot", users.run.hrs[[i]] )   
 }
 
 
