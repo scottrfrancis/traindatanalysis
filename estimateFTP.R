@@ -20,16 +20,47 @@ pushUserTimedDataStream<- function( mongo, collection='quantathlete.userDataStre
   {
     # update the "FTP-dot" named data stream fro the user
     buf<- mongo.bson.buffer.create()
+    mongo.bson.buffer.start.array( buf, "$and" )
+    bufIdx<- 0
+    
+    mongo.bson.buffer.start.object( buf, "0" ); bufIdx<- bufIdx + 1
     mongo.bson.buffer.append( buf, "user_id", user.oid )
+    mongo.bson.buffer.finish.object( buf ) # index 0
+    
+    mongo.bson.buffer.start.object( buf, as.character(bufIdx) ); bufIdx<- bufIdx +1
     mongo.bson.buffer.append( buf, "name", streamName )
+    mongo.bson.buffer.finish.object( buf )  # index 1
+    
+    mongo.bson.buffer.finish.object( buf ) # $and array
     criteria.bson<- mongo.bson.from.buffer( buf )
     
-    dataStream.bson<- mongo.find.one( mongo, 'quantathlete.userDataStreams',
+    dataStream.bson<- mongo.find.one( mongo, collection,
                                       criteria.bson, fields=c(list( 'timeSeries_id'=1 )) )
     if ( is.null( dataStream.bson ) )
     {
-      # create it -- using criteria as the new doc
-      mongo.insert( mongo, 'quantathlete.userDataStreams', criteria.bson )
+      # create it
+      ds.oid<- mongo.oid.create()
+      buf<- mongo.bson.buffer.create()
+      mongo.bson.buffer.append( buf, "_id", ds.oid )
+      doc.bson<- mongo.bson.from.buffer( buf )
+
+      mongo.insert( mongo, collection, doc.bson )
+      
+      buf<- mongo.bson.buffer.create()
+      mongo.bson.buffer.start.object( buf, "$set" )
+      mongo.bson.buffer.append( buf, 'user_id', user.oid )
+      mongo.bson.buffer.finish.object( buf )
+      update.bson<- mongo.bson.from.buffer( buf )
+      
+      mongo.update( mongo, collection, doc.bson, update.bson )
+      
+      buf<- mongo.bson.buffer.create()
+      mongo.bson.buffer.start.object( buf, "$set" )
+      mongo.bson.buffer.append( buf, 'name', streamName )
+      mongo.bson.buffer.finish.object( buf )
+      update.bson<- mongo.bson.from.buffer( buf )
+
+      mongo.update( mongo, collection, doc.bson, update.bson )
     }
     
     # $push the new datum to the end of the data element 
@@ -138,11 +169,11 @@ users.run.hrs<- lapply( users.list, function(u) estimateFTP( mongo, mongo.oid.fr
 # db.users.update( {_id:ObjectId("546115a3bc5f4d0676fb39bb")}, {$push:{ foo:2}} )
 for ( i in 1:length(users.list) )
 { 
-  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Ride-FTP-dot", users.ride.ftps[[i]] )
-  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Run-FTP-dot", users.run.ftps[[i]] )   
+  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', mongo.oid.from.string( users.list[[i]]$'_id' ), "Ride-FTP-dot", users.ride.ftps[[i]] )
+  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', mongo.oid.from.string( users.list[[i]]$'_id' ), "Run-FTP-dot", users.run.ftps[[i]] )   
 
-  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Ride-FTHR-dot", users.ride.hrs[[i]] )
-  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', users.list[[i]]$'_id', "Run-FTHR-dot", users.run.hrs[[i]] )   
+  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', mongo.oid.from.string( users.list[[i]]$'_id' ), "Ride-FTHR-dot", users.ride.hrs[[i]] )
+  pushUserTimedDataStream(  mongo, 'quantathlete.userDataStreams', mongo.oid.from.string( users.list[[i]]$'_id' ), "Run-FTHR-dot", users.run.hrs[[i]] )   
 }
 
 
