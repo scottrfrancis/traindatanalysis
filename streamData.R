@@ -34,6 +34,11 @@ computeCommonStreams<- function( workout.data, streams )
 segmentSpeed.mps<- function( length, duration )
 {
  speed_mps = length/duration
+ 
+ speed_mps[which(speed_mps == Inf)]<- NA
+ speed_mps[which(speed_mps == -Inf)]<- NA
+ 
+ speed_mps
 }
 
 computeSpeedStreams<- function( workout.data, streams )
@@ -42,18 +47,17 @@ computeSpeedStreams<- function( workout.data, streams )
   if (!(is.null(streams$duration)) & !(is.null(streams$length))) {
     cStreams<- append( cStreams, list( 'speed_mps'= segmentSpeed.mps( streams$length, streams$duration ) ) )
   }
-  
-#   if (!(is.null(speedStreams$speed_mps))) {
-#     speed.windows<- sapply( time.windows, function(t) getMaxSustainedMeasure( workout.data$samples$time, speedStreams$speed_mpS, t ) )
-#   }
+  if ( max(workout.data$samples$time) > 30 ) {
+    cStreams<- append( cStreams, list( 'speed_mps_30'= movingAvgForTimeWindow( cStreams$speed_mps, workout.data$samples$time, 30 )))
+  }
   
   cStreams
 }
 
-computeHRStreams<- function( workout.data, streams )
-{
-  
-}
+# computeHRStreams<- function( workout.data, streams )
+# {
+#  
+# }
 
 computePowerStreams<- function( workout.data, streams )
 {
@@ -67,7 +71,7 @@ runFactories<- function( factories, workout.data )
 {
   results<- list()
   lapply( factories, function(f) {
-    if (!(is.null(workout.data[f$depends]))) {
+    if (!(is.null(workout.data$samples[[f$depends]]))) {
       results<<- append( results, f$factory( workout.data, results ) )
     }
   })
@@ -77,7 +81,7 @@ runFactories<- function( factories, workout.data )
 
 stream.factories<- list( '*'= list( 'depends'= 'time', 'factory'= computeCommonStreams),
                           'distance'= list( 'depends'= 'distance', 'factory'= computeSpeedStreams),
-                           'heartrate'= list( 'depends'= 'heartrate', 'factory' = computeHRStreams),
+#                           'heartrate'= list( 'depends'= 'heartrate', 'factory' = computeHRStreams),
                           'watts'= list( 'depends'= 'watts', 'factory'= computePowerStreams ) )
 
 
@@ -141,7 +145,13 @@ summarizePower<- function( workout.data, summaries )
 
 instensityFactor<- function( np, ftp )
 {
-  intensity.factor<- np/ftp
+  intensity.factor<- NA
+  
+  if (!(is.null(ftp)) & !(is.na(ftp))) {
+    intensity.factor<- np/ftp
+  }
+  
+  intensity.factor
 }
 
 tssForPower<- function( workout.data, summaries )
@@ -149,11 +159,23 @@ tssForPower<- function( workout.data, summaries )
   tss<- list( 'tss'= powerTSS( max( workout.data$samples$time ), summaries$power_normalized, summaries$intensity_factor, workout.data$ftp ) )
 }
 
+tssForPace<- function( workout.data, summaries )
+{
+  tss<- summaries$tss
+  
+  if (workout.data$type == 'Run' & !is.null( summaries$intensity_factor ) ) {
+    tss<- (max( workout.data$samples$time )/(60*60))*(summaries$intensity_factor^2)*100
+  } 
+  
+  tss
+}
+
 summary.factories<- list( 'heartrate'= list( 'depends'='heartrate', 'factory'= windowHeartrate ),
                           'pace'= list( 'depends'= 'speed_mps', 'factory'= windowPace ),
                           'np'= list( 'depends'= 'watts_30', 'factory'= summarizePower ),
                           'watts'= list( 'depends'= 'watts', 'factory'= windowPower ),
-                          'tss'= list( 'depends'='watts_30', 'factory'= tssForPower ))
+                          'tss'= list( 'depends'='watts_30', 'factory'= tssForPower ),
+                          'tss'= list( 'depends'='speed_mps', 'factory'= tssForPace ) )
 
 computeSummaries<- function( workout.data )
 {

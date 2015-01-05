@@ -19,7 +19,7 @@ while( TRUE )
   buf<- mongo.bson.buffer.create(); mongo.bson.buffer.append( buf, "workout_id", workout.oid ); q.bson<- mongo.bson.from.buffer( buf )
   mongo.remove( mongo, dbCollection(orphans.collection), q.bson )
   
-
+  cat( 'summarizing workout ', mongo.oid.to.string(workout.oid), "\n" )
   summarizeWorkout( mongo, workout.oid )
 }
 

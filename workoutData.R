@@ -50,7 +50,10 @@ loadWorkoutData<- function( mongo, workout.oid )
   # remap nulls and 0's to NAs and make sure all cols are vectors not lists
   workout.data$samples<- cleanColumnNulls( sample.df )
 
-  workout.data$ftp<- ftpForUser(mongo, workout.data$user_id, workout.data$type, workout.data$start_date )
+  ftp<- ftpForUser(mongo, workout.data$user_id, workout.data$type, workout.data$start_date )
+  if ( !(is.null(ftp)) & !(is.na(ftp)) ) {
+    workout.data$ftp<- ftp
+  }
 
   workout.data
 }
