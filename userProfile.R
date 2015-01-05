@@ -41,12 +41,13 @@ ftpForUser<- function( mongo, user.oid, actType, date )
   thresholds.curs<- mongo.find( mongo, dbCollection( thresholds.collection ), q.bson, sort='{"endDate":-1}', limit=1 )
   if ( mongo.cursor.next( thresholds.curs ) ) {
     thresholds<- mongo.bson.to.list( mongo.cursor.value( thresholds.curs ) )
-  
-    idx<- which( thresholds$timeWindows == 20*60 )
-    if ( actType == 'Ride' & (length(thresholds$wattsWindows) >= idx) ) {
-      ftp<- thresholds$wattsWindows[idx]
-    } else if ( actType == 'Run' & (length(thresholds$paceWindows) >= idx) ) {
-      ftp<- thresholds$paceWindows[idx]
+    if ( length( thresholds$timeWindows ) > 0 ) {
+      idx<- which( thresholds$timeWindows == 20*60 )
+      if ( actType == 'Ride' & (length(thresholds$wattsWindows) >= idx) ) {
+        ftp<- thresholds$wattsWindows[idx]
+      } else if ( actType == 'Run' & (length(thresholds$paceWindows) >= idx) ) {
+        ftp<- thresholds$paceWindows[idx]
+      }
     }
   }
   
