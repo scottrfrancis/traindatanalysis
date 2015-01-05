@@ -1,19 +1,14 @@
 source( 'config.R' )
 
-source( 'initMongo.R' )
-library(rmongodb)
+source( 'dbUtils.R' )
 source('summarizeWorkoutList.R')
 
-mongo<- initMongo( host=dbHost, db=dbName )
+mongo<- initDB( host=dbHost, db=dbName )
 
-
-#workouts.list<- mongo.find.all( mongo, 'quantathlete.workoutSummariesOrphans', fields=mongo.bson.from.list( c(list('workout_id'=1L))) )
-
-orphans.collection<- paste( dbName, "workoutSummariesOrphans", sep="." )
 
 while( TRUE )
 {
-  workout.bson<- mongo.find.one( mongo, orphans.collection, fields=mongo.bson.from.list( c(list('workout_id'=1L))) ) 
+  workout.bson<- mongo.find.one( mongo, dbCollection(orphans.collection), fields=mongo.bson.from.list( c(list('workout_id'=1L))) ) 
   if ( is.null( workout.bson ) )
   {
     break
@@ -22,15 +17,9 @@ while( TRUE )
 
   # remove from list right away so no oneelse gets it.  if we fail, the bath job will re-enter it...
   buf<- mongo.bson.buffer.create(); mongo.bson.buffer.append( buf, "workout_id", workout.oid ); q.bson<- mongo.bson.from.buffer( buf )
-  mongo.remove( mongo, 'quantathlete.workoutSummariesOrphans', q.bson )
+  mongo.remove( mongo, dbCollection(orphans.collection), q.bson )
   
 
   summarizeWorkout( mongo, workout.oid )
 }
 
-
-#workouts.list<- mongo.find.all( mongo, 'quantathlete.workouts', fields=mongo.bson.from.list( c( list( '_id'=1L))))
-# workouts.ids<- lapply( workouts.list, function(w) mongo.oid.from.string(w$'_id' ) )
-#workouts.ids<- lapply( workouts.list, function(w) mongo.oid.from.string(w$'workout_id' ) )
-
-#summarizeWorkoutList( mongo, workouts.ids )
