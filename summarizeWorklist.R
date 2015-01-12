@@ -1,7 +1,7 @@
 source( 'config.R' )
 
 source( 'dbUtils.R' )
-source('summarizeWorkoutList.R')
+source('summarizeWorkout.R')
 
 mongo<- initDB( host=dbHost, db=dbName )
 
@@ -16,7 +16,7 @@ while( TRUE )
   workout.oid<- mongo.bson.to.list( workout.bson )$workout_id
 
   # remove from list right away so no oneelse gets it.  if we fail, the bath job will re-enter it...
-  buf<- mongo.bson.buffer.create(); mongo.bson.buffer.append( buf, "workout_id", workout.oid ); q.bson<- mongo.bson.from.buffer( buf )
+  q.bson<- queryForId( workout.oid, "workout_id" )
   mongo.remove( mongo, dbCollection(orphans.collection), q.bson )
   
   cat( 'summarizing workout ', mongo.oid.to.string(workout.oid), "\n" )

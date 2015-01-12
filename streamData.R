@@ -170,12 +170,12 @@ tssForPace<- function( workout.data, summaries )
   tss
 }
 
-summary.factories<- list( 'heartrate'= list( 'depends'='heartrate', 'factory'= windowHeartrate ),
-                          'pace'= list( 'depends'= 'speed_mps', 'factory'= windowPace ),
-                          'np'= list( 'depends'= 'watts_30', 'factory'= summarizePower ),
-                          'watts'= list( 'depends'= 'watts', 'factory'= windowPower ),
-                          'tss'= list( 'depends'='watts_30', 'factory'= tssForPower ),
-                          'tss'= list( 'depends'='speed_mps', 'factory'= tssForPace ) )
+summary.factories<- list( list( 'depends'='heartrate', 'factory'= windowHeartrate ),
+                          list( 'depends'= 'speed_mps', 'factory'= windowPace ),
+                          list( 'depends'= 'watts_30', 'factory'= summarizePower ),
+                          list( 'depends'= 'watts', 'factory'= windowPower ),
+                          list( 'depends'='watts_30', 'factory'= tssForPower ),
+                          list( 'depends'='speed_mps', 'factory'= tssForPace ) )
 
 computeSummaries<- function( workout.data )
 {
