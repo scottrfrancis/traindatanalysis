@@ -22,6 +22,7 @@ summarizeWorkout<- function( mongo, workout.oid, details.print=FALSE )
   
   q.bson<- queryForId( workout.data$'_id', "workout_id" )  
   fields.list$workout_id <- workout.oid
+  fields.list$timeWindows <- time.windows
   mongo.update( mongo, dbCollection(summaries.collection), 
                   q.bson,                  
                   mongo.bson.from.list( fields.list ), 
