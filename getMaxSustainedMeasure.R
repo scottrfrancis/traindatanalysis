@@ -18,7 +18,7 @@ getMaxSustainedMeasure<- function( time_S.elapsed, metric, window_S )
   }
   
 #  max.metric<- max( rollapply( coredata(mins)[,1], 4, min ) )
-  max.metric<- max( rollapply( coredata(means)[,1], 4, min ) )
+  max.metric<- max( rollapply( coredata(means)[,1], 4, min ), na.rm=TRUE )
   
   return( max.metric )
 }
