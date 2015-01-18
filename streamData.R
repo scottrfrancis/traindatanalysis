@@ -128,6 +128,14 @@ normalizedPower<- function( watts )
   np<- (sum(watts.use^4)/length(watts.use))^(1/4)
 }
 
+normalizedPace<- function( speed_mps )
+{
+  speed.use<- speed_mps[!is.na(speed_mps)]
+  
+#  np<- (sum(speed.use^4)/length(speed.use))^(1/4)
+  mean( speed_mps, na.rm=TRUE )
+}
+
 variabilityIndex<- function( np, watts )
 {
   np/(mean( watts, na.rm=TRUE ))
@@ -139,6 +147,16 @@ summarizePower<- function( workout.data, summaries )
   summary<- append( summary, list( 'power_normalized'= normalizedPower( workout.data$samples$watts_30 ) ) )
   summary<- append( summary, list( 'variability_index'= variabilityIndex( summary$power_normalized, workout.data$samples$watts )))
   summary<- append( summary, list( 'intensity_factor'= intensityFactor( summary$power_normalized, workout.data$ftp )))
+  
+  summary
+}
+
+summarizePace<- function( workout.data, summaries )
+{
+  summary<- list()
+  summary<- append( summary, list( 'pace_normalized'= normalizedPace( workout.data$samples$speed_mps_30 ) ) )
+  summary<- append( summary, list( 'variability_index'= variabilityIndex( summary$pace_normalized, workout.data$samples$speed_mps )))
+  summary<- append( summary, list( 'intensity_factor'= intensityFactor( summary$pace_normalized, workout.data$ftp )))
   
   summary
 }
@@ -167,7 +185,7 @@ tssForPace<- function( workout.data, summaries )
     tss<- (max( workout.data$samples$time )/(60*60))*(summaries$intensity_factor^2)*100
   } 
   
-  tss
+  list( 'tss'= tss )
 }
 
 summary.factories<- list( list( 'depends'='heartrate', 'factory'= windowHeartrate ),
@@ -175,6 +193,7 @@ summary.factories<- list( list( 'depends'='heartrate', 'factory'= windowHeartrat
                           list( 'depends'= 'watts_30', 'factory'= summarizePower ),
                           list( 'depends'= 'watts', 'factory'= windowPower ),
                           list( 'depends'='watts_30', 'factory'= tssForPower ),
+                          list( 'depends'='speed_mps_30', 'factory'= summarizePace ),
                           list( 'depends'='speed_mps', 'factory'= tssForPace ) )
 
 computeSummaries<- function( workout.data )
