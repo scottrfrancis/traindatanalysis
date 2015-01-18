@@ -174,7 +174,14 @@ instensityFactor<- function( np, ftp )
 
 tssForPower<- function( workout.data, summaries )
 {
-  tss<- list( 'tss'= powerTSS( max( workout.data$samples$time ), summaries$power_normalized, summaries$intensity_factor, workout.data$ftp ) )
+  tss <- NA
+  if (workout.data$type == 'Ride' & !is.null( summaries$power_normalized )
+      & !is.null( summaries$intensity_factor ) & !is.null(workout.data$ftp))
+  {
+    tss <- list( 'tss' = (max( workout.data$samples$time )*summaries$power_normalized*summaries$intensity_factor)/(workout.data$ftp*3600)*100 )
+  }
+  
+  tss
 }
 
 tssForPace<- function( workout.data, summaries )

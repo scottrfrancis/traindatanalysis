@@ -54,13 +54,13 @@ ftpForUser<- function( mongo, user.oid, actType, date )
   ftp
 }
 
-intensityFactor<- function( watts.normalized, ftp )
-{
- intensity<- watts.normalized/ftp 
-}
+# intensityFactor<- function( watts.normalized, ftp )
+# {
+#  intensity<- watts.normalized/ftp 
+# }
 
-powerTSS<- function( time_S, watts.normalized, intensity.factor, ftp )
-{
-  tss<- (time_S*watts.normalized*intensity.factor)/(ftp*3600)*100
-}
+# powerTSS<- function( time_S, watts.normalized, intensity.factor, ftp )
+# {
+#   tss<- (time_S*watts.normalized*intensity.factor)/(ftp*3600)*100
+# }
   
